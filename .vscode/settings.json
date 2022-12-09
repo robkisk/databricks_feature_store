@@ -1,0 +1,16 @@
+{
+  "python.linting.enabled": false,
+  "python.linting.pylintEnabled": true,
+  "python.linting.pylintArgs": [
+    "--disable=E1137"
+  ]
+} //   "python.linting.pylintEnabled": true,
+//   "python.linting.flake8Enabled": true,
+//   "python.linting.enabled": true,
+//   "python.autoComplete.extraPaths": [
+//     "${workspaceFolder}/logfood_insights"
+//   ],
+//   "python.analysis.extraPaths": [
+//     "${workspaceFolder}/logfood_insights"
+//   ]
+// }
