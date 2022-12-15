@@ -17,7 +17,7 @@ def create_tables():
         return spark.createDataFrame(df, schema=schema)
 
     def write_to_delta(spark_df, delta_table_name):
-        spark.sql("create schema if not exists robkisk")
+        # spark.sql("create schema if not exists robkisk")
         spark_df.write.mode("overwrite").format("delta").saveAsTable(delta_table_name)
         out = f"""The following tables were created:
               - {delta_tables['ticket']}
@@ -52,20 +52,14 @@ def create_tables():
     passenger_dempgraphic_schema = create_schema(passenger_demographic_types)
     passenger_label_schema = create_schema(passenger_label_types)
 
-    passenger_ticket_features = create_pd_dataframe(
-        "data/passenger_ticket.csv", passenger_ticket_schema
-    )
-    passenger_demographic_features = create_pd_dataframe(
-        "data/passenger_demographic.csv", passenger_dempgraphic_schema
-    )
-    passenger_labels = create_pd_dataframe(
-        "data/passenger_labels.csv", passenger_label_schema
-    )
+    passenger_ticket_features = create_pd_dataframe("data/passenger_ticket.csv", passenger_ticket_schema)
+    passenger_demographic_features = create_pd_dataframe("data/passenger_demographic.csv", passenger_dempgraphic_schema)
+    passenger_labels = create_pd_dataframe("data/passenger_labels.csv", passenger_label_schema)
 
     delta_tables = {
-        "ticket": "robkisk.passenger_ticket_feautures",
-        "demographic": "robkisk.passenger_demographic_features",
-        "labels": "robkisk.passenger_labels",
+        "ticket": "hive_metastore.robkisk.passenger_ticket_base",
+        "demographic": "hive_metastore.robkisk.passenger_demographic_base",
+        "labels": "hive_metastore.robkisk.passenger_labels",
     }
 
     write_to_delta(passenger_ticket_features, delta_tables["ticket"])

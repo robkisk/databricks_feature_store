@@ -4,6 +4,10 @@ from pyspark.sql.functions import col
 
 fs = FeatureStoreClient()
 
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("appName").getOrCreate()
+
 
 def compute_passenger_ticket_features(df):
     # Extract characters of ticket if they exist
@@ -28,13 +32,13 @@ def compute_passenger_ticket_features(df):
     )
 
 
-df = spark.table("robkisk.passenger_ticket_feautures")
+df = spark.table("hive_metastore.robkisk.passenger_ticket_base")
 passenger_ticket_features = compute_passenger_ticket_features(df)
 
 # display(passenger_ticket_features)
 # passenger_ticket_features.show(10, False)
 
-feature_table_name = "robkisk.ticket_features"
+feature_table_name = "hive_metastore.robkisk.passenger_ticket_features"
 
 # If the feature table has already been created, no need to recreate
 try:

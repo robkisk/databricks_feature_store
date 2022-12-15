@@ -2,6 +2,10 @@ import pyspark.sql.functions as func
 from databricks.feature_store import FeatureStoreClient, feature_table
 from pyspark.sql.functions import col
 
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("appName").getOrCreate()
+
 fs = FeatureStoreClient()
 
 
@@ -34,13 +38,13 @@ def compute_passenger_demographic_features(df):
     )
 
 
-df = spark.table("robkisk.passenger_demographic_features")
+df = spark.table("hive_metastore.robkisk.passenger_demographic_base")
 passenger_demographic_features = compute_passenger_demographic_features(df)
 
 # passenger_demographic_features.show(10, False)
 # display(passenger_demographic_features)
 
-feature_table_name = "robkisk.demographic_features"
+feature_table_name = "hive_metastore.robkisk.passenger_demographic_features"
 
 # If the feature table has already been created, no need to recreate
 try:

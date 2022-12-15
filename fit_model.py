@@ -1,65 +1,69 @@
+from databricks.feature_store import FeatureLookup
+from databricks.feature_store import FeatureStoreClient
 import mlflow
-import numpy as np
-import pandas as pd
-import xgboost as xgb
-from databricks.feature_store import FeatureLookup, FeatureStoreClient
 from mlflow.tracking import MlflowClient
-from sklearn.compose import ColumnTransformer
+
+import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import FeatureUnion
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.pipeline import make_pipeline, make_union
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline, make_union
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
+import pandas as pd
+import numpy as np
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("appName").getOrCreate()
 
 fs = FeatureStoreClient()
 
-# experiment_location = "/Shared/robby.kiskanyan@databricks.com/feature_store_experiment/"
 experiment_location = "/Users/robby.kiskanyan@databricks.com/feature_store_experiment/"  # workspace location
-# experiment_location = "/Shared/robkisk/feature_store_experiment/"
 
 
 def get_or_create_experiment(experiment_location: str) -> None:
+
     if not mlflow.get_experiment_by_name(experiment_location):
         print("Experiment does not exist. Creating experiment")
+
         mlflow.create_experiment(experiment_location)
+
     mlflow.set_experiment(experiment_location)
 
 
+# experiment_location = "/Shared/feature_store_experiment"
 get_or_create_experiment(experiment_location)
-mlflow.set_experiment(experiment_location)
 
+mlflow.set_experiment(experiment_location)
 feature_lookups = [
     FeatureLookup(
-        table_name="robkisk.ticket_features",
+        table_name="hive_metastore.robkisk.passenger_ticket_features",
         feature_names=["CabinChar", "CabinMulti", "Embarked", "FareRounded", "Parch", "Pclass"],
         lookup_key="PassengerId",
     ),
     FeatureLookup(
-        table_name="robkisk.demographic_features",
+        table_name="hive_metastore.robkisk.passenger_demographic_features",
         feature_names=["Age", "NameMultiple", "NamePrefix", "Sex", "SibSp"],
         lookup_key="PassengerId",
     ),
 ]
+
 # Select passenger records of interest
-passengers_and_target = spark.table("robkisk.passenger_labels")
-# passengers_and_target.show(10, False)
+passengers_and_target = spark.table("hive_metastore.robkisk.passenger_labels")
 
 # Attach features to passengers
 training_set = fs.create_training_set(
     df=passengers_and_target, feature_lookups=feature_lookups, label="Survived", exclude_columns=["PassengerId"]
 )
 
+# Create training datast
 training_df = training_set.load_df()
 
-# training_df.show(10, False)
-# display(training_df)
-
-
-# Convert to Pandas for scikit-learn training
 data = training_df.toPandas()
 
-# Split into training and test datasets
 label = "Survived"
 features = [col for col in data.columns if col not in [label, "PassengerId"]]
 
@@ -91,13 +95,10 @@ transformer = ColumnTransformer(
     remainder="drop",
 )
 
-# Specify the model
-# See Hyperopt for hyperparameter tuning: https://docs.databricks.com/applications/machine-learning/automl-hyperparam-tuning/index.html
 model = xgb.XGBClassifier(n_estimators=50, use_label_encoder=False)
 
 classification_pipeline = Pipeline([("preprocess", transformer), ("classifier", model)])
 
-# Fit the model, collect statistics, and log the model
 with mlflow.start_run() as run:
 
     run_id = run.info.run_id

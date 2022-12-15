@@ -5,7 +5,7 @@ from databricks.feature_store import FeatureStoreClient
 client = MlflowClient()
 fs = FeatureStoreClient()
 
-new_passenger_records = spark.table("robkisk.passenger_labels").select("PassengerId").limit(20)
+new_passenger_records = spark.table("robkisk.default.passenger_labels").select("PassengerId").limit(20)
 
 
 def get_run_id(model_name, stage="Production"):
